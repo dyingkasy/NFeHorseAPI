@@ -77,3 +77,35 @@ Exemplo de erro:
 
 - O certificado e informado por numero de serie e senha no JSON.
 - O ambiente usa `homologacao` ou `producao`.
+
+## Certificado e ACBr (configuracao atual)
+
+O projeto usa o ACBrNFe diretamente no codigo (`uNFeDistribuicaoService.pas`).
+Nao ha arquivo `.ini` ou config externa: o certificado e o ambiente sao
+informados via JSON em cada chamada.
+
+### Certificado
+
+- A API espera `certSerie` com o numero de serie do certificado instalado no Windows.
+- A senha do certificado vai em `certSenha`.
+- Se o certificado nao estiver instalado no repositorio do Windows, a chamada vai falhar.
+
+### Schemas da NFe
+
+O ACBr usa `PathSchemas` apontando para a pasta `Schemas\\NFe` ao lado do executavel:
+
+```
+<pasta-do-exe>\\Schemas\\NFe
+```
+
+Garanta que os schemas da NFe estejam nesse caminho no deploy.
+
+### Ambiente
+
+- `ambiente = producao` -> `taProducao`
+- `ambiente = homologacao` (ou `taHomologacao`) -> `taHomologacao`
+
+### Observacoes do ACBr
+
+- SSL/HTTP: `WinCrypt`/`WinHttp` (configurado em `ConfigureACBr`).
+- Timeout: 60s.
