@@ -109,3 +109,176 @@ Garanta que os schemas da NFe estejam nesse caminho no deploy.
 
 - SSL/HTTP: `WinCrypt`/`WinHttp` (configurado em `ConfigureACBr`).
 - Timeout: 60s.
+
+## Integracao (exemplos)
+
+### Payload base
+
+```json
+{
+  "certSerie": "0000000000000000",
+  "certSenha": "SENHA",
+  "ambiente": "producao",
+  "ultNSU": "0",
+  "codUF": 35
+}
+```
+
+### Delphi (REST.Client)
+
+```pascal
+uses
+  System.SysUtils,
+  System.Classes,
+  REST.Client,
+  REST.Types;
+
+procedure BaixarZipDelphi;
+var
+  Client: TRESTClient;
+  Request: TRESTRequest;
+  Response: TRESTResponse;
+  CNPJ: string;
+  Body: string;
+begin
+  CNPJ := '12345678000199';
+  Body := '{' +
+          '"certSerie":"0000000000000000",' +
+          '"certSenha":"SENHA",' +
+          '"ambiente":"producao",' +
+          '"ultNSU":"0",' +
+          '"codUF":35' +
+          '}';
+
+  Client := TRESTClient.Create('http://localhost:9000');
+  Request := TRESTRequest.Create(nil);
+  Response := TRESTResponse.Create(nil);
+  try
+    Request.Client := Client;
+    Request.Response := Response;
+    Request.Method := rmPOST;
+    Request.Resource := '/nfe/zip/' + CNPJ;
+    Request.AddBody(Body, ctAPPLICATION_JSON);
+    Request.Execute;
+
+    if Response.StatusCode = 200 then
+      Response.SaveToFile('nfe_doczip.zip')
+    else
+      Writeln(Response.Content);
+  finally
+    Response.Free;
+    Request.Free;
+    Client.Free;
+  end;
+end;
+```
+
+### Delphi (Indy)
+
+```pascal
+uses
+  System.SysUtils,
+  System.Classes,
+  IdHTTP,
+  IdSSLOpenSSL;
+
+procedure BaixarZipIndy;
+var
+  Http: TIdHTTP;
+  Body: TStringStream;
+  Resp: TMemoryStream;
+  CNPJ: string;
+begin
+  CNPJ := '12345678000199';
+  Http := TIdHTTP.Create(nil);
+  Body := TStringStream.Create(
+    '{"certSerie":"0000000000000000","certSenha":"SENHA","ambiente":"producao","ultNSU":"0","codUF":35}',
+    TEncoding.UTF8
+  );
+  Resp := TMemoryStream.Create;
+  try
+    Http.Request.ContentType := 'application/json';
+    Http.Post('http://localhost:9000/nfe/zip/' + CNPJ, Body, Resp);
+    Resp.SaveToFile('nfe_doczip.zip');
+  finally
+    Resp.Free;
+    Body.Free;
+    Http.Free;
+  end;
+end;
+```
+
+### JavaScript (Node.js)
+
+```js
+import fs from "fs";
+
+const url = "http://localhost:9000/nfe/zip/12345678000199";
+const payload = {
+  certSerie: "0000000000000000",
+  certSenha: "SENHA",
+  ambiente: "producao",
+  ultNSU: "0",
+  codUF: 35
+};
+
+const res = await fetch(url, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
+});
+
+if (res.status === 200) {
+  const buf = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync("nfe_doczip.zip", buf);
+} else {
+  console.log(await res.text());
+}
+```
+
+### Python
+
+```python
+import requests
+
+url = "http://localhost:9000/nfe/zip/12345678000199"
+payload = {
+  "certSerie": "0000000000000000",
+  "certSenha": "SENHA",
+  "ambiente": "producao",
+  "ultNSU": "0",
+  "codUF": 35
+}
+
+resp = requests.post(url, json=payload)
+if resp.status_code == 200:
+    with open("nfe_doczip.zip", "wb") as f:
+        f.write(resp.content)
+else:
+    print(resp.text)
+```
+
+### C# (.NET)
+
+```csharp
+using System.Net.Http.Json;
+
+var url = "http://localhost:9000/nfe/zip/12345678000199";
+var payload = new {
+    certSerie = "0000000000000000",
+    certSenha = "SENHA",
+    ambiente = "producao",
+    ultNSU = "0",
+    codUF = 35
+};
+
+using var client = new HttpClient();
+var response = await client.PostAsJsonAsync(url, payload);
+
+if (response.IsSuccessStatusCode) {
+    var bytes = await response.Content.ReadAsByteArrayAsync();
+    await File.WriteAllBytesAsync("nfe_doczip.zip", bytes);
+} else {
+    Console.WriteLine(await response.Content.ReadAsStringAsync());
+}
+```
